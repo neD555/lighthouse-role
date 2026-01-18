@@ -1,0 +1,41 @@
+---
+- name: install packages
+  become: true
+  ansible.builtin.package:
+    name:
+      - git
+      - nginx
+    state: present
+
+- name: start nginx
+  become: true
+  ansible.builtin.service:
+    name: nginx
+    enabled: true
+    state: started
+
+- name: create lighthouse directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ lighthouse_root }}"
+    state: directory
+    owner: "{{ lighthouse_user }}"
+    group: "{{ lighthouse_group }}"
+    mode: "0755"
+
+- name: clone lighthouse
+  become: true
+  ansible.builtin.git:
+    repo: "{{ lighthouse_repo }}"
+    dest: "{{ lighthouse_root }}"
+    version: "{{ lighthouse_version }}"
+    force: true
+  notify: reload nginx
+
+- name: configure nginx
+  become: true
+  ansible.builtin.template:
+    src: lighthouse.conf.j2
+    dest: /etc/nginx/conf.d/lighthouse.conf
+    mode: "0644"
+  notify: reload nginx
